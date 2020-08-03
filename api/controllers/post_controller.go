@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 
+	"github.com/gorilla/mux"
 	"github.com/inawazalam/forum-microservices/api/models"
 	"github.com/inawazalam/forum-microservices/api/responses"
 )
@@ -28,7 +28,7 @@ func (s *Server) AddNewPost(w http.ResponseWriter, r *http.Request) {
 	}
 	//post.Prepare()
 	fmt.Println(post)
-	savePost, er := models.SavePost(post)
+	savePost, er := models.SavePost(s.Client, post)
 	if er != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
 	}
@@ -41,17 +41,9 @@ func (s *Server) AddNewPost(w http.ResponseWriter, r *http.Request) {
 //
 func (s *Server) GetPostByID(w http.ResponseWriter, r *http.Request) {
 
-	auther := r.URL.Query().Get("autherid")
-	if auther == "" {
-		//responses.ERROR(w, http.StatusBadRequest)
-		responses.JSON(w, http.StatusBadRequest, "Invalid Param")
-	}
-	autherID, err := strconv.ParseUint(auther, 0, 16)
-	if err != nil {
-		responses.ERROR(w, http.StatusExpectationFailed, err)
-	}
+	vars := mux.Vars(r)
 	//var autherID uint64
-	GetPost, er := models.GetPostByID(autherID)
+	GetPost, er := models.GetPostByID(s.Client, vars["postID"])
 	if er != nil {
 		responses.ERROR(w, http.StatusExpectationFailed, er)
 	}
@@ -64,7 +56,7 @@ func (s *Server) GetPostByID(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetPost(w http.ResponseWriter, r *http.Request) {
 	//post := models.Post{}
 
-	posts, err := models.FindAllPost()
+	posts, err := models.FindAllPost(s.Client)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
@@ -75,17 +67,28 @@ func (s *Server) GetPost(w http.ResponseWriter, r *http.Request) {
 //
 func (s *Server) Comment(w http.ResponseWriter, r *http.Request) {
 
+	vars := mux.Vars(r)
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
 		return
 	}
-	post := models.Post{}
+	comment := models.CommentRequest{}
 
-	err = json.Unmarshal(body, &post)
+	err = json.Unmarshal(body, &comment)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	//comment, er := models.CommentOnPost(post)
+	if vars["postID"] == "" {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+	comment.ID = vars["postID"]
+	postData, er := models.CommentOnPost(s.Client, comment)
+	if er != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, er)
+		return
+	}
+	responses.JSON(w, http.StatusOK, postData)
 }

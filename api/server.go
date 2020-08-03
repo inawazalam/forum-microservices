@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/inawazalam/forum-microservices/api/controllers"
+	"github.com/inawazalam/forum-microservices/api/seed"
 	"github.com/joho/godotenv"
 )
 
@@ -33,19 +34,17 @@ func Run() {
 	var err error
 	err = godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error getting env, %v", err)
+		fmt.Println("Error getting env, %v", err)
 	} else {
 		fmt.Println("We are getting the env values", os.Getenv("DB_DRIVER"))
 	}
+	server.InitilizeMongo(os.Getenv("MONGO_DB_DRIVER"), os.Getenv("MONGO_DB_USER"), os.Getenv("MONGO_DB_PASSWORD"), os.Getenv("MONGO_DB_PORT"), os.Getenv("MONGO_DB_HOST"))
 
 	server.Initialize(os.Getenv("DB_DRIVER"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_PORT"), os.Getenv("DB_HOST"), os.Getenv("DB_NAME"))
-	//var mongoConnection *mogo.Connection = server.InitializeMongo(os.Getenv("MONGO_DB_DRIVER"), os.Getenv("MONGO_DB_USER"), os.Getenv("MONGO_DB_PASSWORD"), os.Getenv("MONGO_DB_PORT"), os.Getenv("MONGO_DB_HOST"), os.Getenv("MONGO_DB_NAME"))
-	//server.InitializeMongo(os.Getenv("MONGO_DB_DRIVER"), os.Getenv("MONGO_DB_USER"), os.Getenv("MONGO_DB_PASSWORD"), os.Getenv("MONGO_DB_PORT"), os.Getenv("MONGO_DB_HOST"), os.Getenv("MONGO_DB_NAME"))
 
-	//seed.Load(server.DB)
-	//seed.LoadMongo(mongoConnection)
-	//server.InitializeMong(os.Getenv("MONGO_DB_DRIVER"), os.Getenv("MONGO_DB_NAME"))
+	seed.LoadMongoData(server.Client)
+	//mongodb.InitializeMongo()
 
-	server.Run(":8088")
+	server.Run(":8087")
 
 }

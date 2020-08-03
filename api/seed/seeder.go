@@ -1,22 +1,31 @@
 package seed
 
 import (
-	"log"
+	"context"
+	"fmt"
+	"os"
+	"time"
 
 	"github.com/inawazalam/forum-microservices/api/models"
-	"github.com/jinzhu/gorm"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var users = []models.User{
-	models.User{
-		Nickname: "Steven victor",
-		Email:    "steven@gmail.com",
-		Password: "password",
+var coupons = []models.Coupon{
+	models.Coupon{
+		CouponCode: "TRAC075",
+		Amount:     "75",
+		CreatedAt:  time.Now(),
 	},
-	models.User{
-		Nickname: "Martin Luther",
-		Email:    "luther@gmail.com",
-		Password: "password",
+	models.Coupon{
+		CouponCode: "TRAC065",
+		Amount:     "65",
+		CreatedAt:  time.Now(),
+	},
+	models.Coupon{
+		CouponCode: "TRAC125",
+		Amount:     "125",
+		CreatedAt:  time.Now(),
 	},
 }
 
@@ -31,39 +40,25 @@ var posts = []models.Post{
 	},
 }
 
-func Load(db *gorm.DB) {
-
-	err := db.Debug().DropTableIfExists(&models.Post{}, &models.User{}).Error
+//
+func LoadMongoData(mongoClient *mongo.Client) {
+	var couponResult interface{}
+	var postResult interface{}
+	collection := mongoClient.Database(os.Getenv("MONGO_DB_NAME")).Collection("coupons")
+	// get a MongoDB document using the FindOne() method
+	err := collection.FindOne(context.TODO(), bson.D{}).Decode(&couponResult)
 	if err != nil {
-		log.Fatalf("cannot drop table: %v", err)
-	}
-	err = db.Debug().AutoMigrate(&models.User{}, &models.Post{}).Error
-	if err != nil {
-		log.Fatalf("cannot migrate table: %v", err)
-	}
-
-	/*
-		err = db.Debug().Model(&models.Post{}).AddForeignKey("author_id", "users(id)", "cascade", "cascade").Error
-		if err != nil {
-			log.Fatalf("attaching foreign key error: %v", err)
+		for i, _ := range coupons {
+			couponData, err := collection.InsertOne(context.TODO(), coupons[i])
+			fmt.Println(couponData, err)
 		}
-	*/
+	}
 
-	for i, _ := range users {
-		err = db.Debug().Model(&models.User{}).Create(&users[i]).Error
-		if err != nil {
-			log.Fatalf("cannot seed users table: %v", err)
-		}
-		posts[i].AuthorID = users[i].ID
-
-		err = db.Debug().Model(&models.Post{}).Create(&posts[i]).Error
-		if err != nil {
-			log.Fatalf("cannot seed posts table: %v", err)
+	er := collection.FindOne(context.TODO(), bson.D{}).Decode(&postResult)
+	if er != nil {
+		for j, _ := range posts {
+			postData, err := collection.InsertOne(context.TODO(), posts[j])
+			fmt.Println(postData, err)
 		}
 	}
 }
-
-/*func LoadMongo(conn *mongo.Connection) {
-	collection := conn.Collection("coupon")
-
-}*/

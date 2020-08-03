@@ -6,12 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"log"
 	"strings"
 	"time"
 
-	"github.com/inawazalam/forum-microservices/api/mongodb"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 //Coupon sr
@@ -43,12 +42,10 @@ func (c *Coupon) Validate() error {
 }
 
 //
-func SaveCoupon(coupon Coupon) (Coupon, error) {
+func SaveCoupon(client *mongo.Client, coupon Coupon) (Coupon, error) {
 	var err error
 	//con := controllers.InitializeMong(os.Getenv("MONGO_DB_DRIVER"), os.Getenv("MONGO_DB_NAME"))
-	if client == nil {
-		client = mongodb.InitializeMongo()
-	}
+
 	//conn := mongodb.GetMongoConnection("localhost", "traceable")
 	// Get a handle for your collection
 	collection := client.Database("traceable").Collection("coupon")
@@ -61,7 +58,7 @@ func SaveCoupon(coupon Coupon) (Coupon, error) {
 	// Insert a single document
 	insertResult, err := collection.InsertOne(context.TODO(), coupon)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 	fmt.Println("Inserted a single document: ", insertResult.InsertedID)
 
@@ -69,13 +66,10 @@ func SaveCoupon(coupon Coupon) (Coupon, error) {
 }
 
 //
-func ValidateCouponCode(code string) (Coupon, error) {
+func ValidateCouponCode(client *mongo.Client, code string) (Coupon, error) {
 	var err error //var filter bson.M
 	var result Coupon
 	var temp interface{}
-	if client == nil {
-		client = mongodb.InitializeMongo()
-	}
 	poo := map[string]string{}
 	err = json.Unmarshal([]byte(code), &poo)
 	if err != nil {
@@ -83,13 +77,8 @@ func ValidateCouponCode(code string) (Coupon, error) {
 	} else {
 		temp = poo
 	}
-	collection := client.Database("traceable").Collection("coupon")
-	//injection := strings.ContainsAny(code, ",{$")
-	/*injection := strings.ContainsAny(code, ",{$")
-	if injection {
-		filter := bson.M{"couponcode": bson.M{`$gt`: ""}}
-		err = collection.FindOne(context.TODO(), filter).Decode(&result)
-	} else {*/
+	collection := client.Database("traceable").Collection("coupons")
+
 	filters := bson.D{{"couponcode", temp}}
 	err = collection.FindOne(context.TODO(), filters).Decode(&result)
 	//}

@@ -8,7 +8,7 @@ require (
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8 // indirect
 	github.com/go-bongo/go-dotaccess v0.0.0-20190924013105-74ea4f4ca4eb // indirect
 	github.com/google/uuid v1.1.1 // indirect
-	github.com/goonode/mogo v0.0.0-20181028112152-10c38e9be609
+	github.com/goonode/mogo v0.0.0-20181028112152-10c38e9be609 // indirect
 	github.com/gorilla/handlers v1.4.2 // indirect
 	github.com/gorilla/mux v1.7.4
 	github.com/jinzhu/gorm v1.9.14

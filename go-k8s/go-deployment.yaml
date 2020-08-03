@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go
+  template:
+    metadata:
+      labels:
+        app: go
+    spec:
+      containers:
+      - name: go
+        image: localhost:5000/go-final:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8088
+        resources:
+          limits:
+            cpu: "500m"
+          requests:
+            cpu: 256m
+        volumeMounts:
+        - name: go-configmap-volume
+          mountPath: /.env
+          subPath: .env
+      volumes:
+      - name: go-configmap-volume
+        configMap:
+          name: go-configmap

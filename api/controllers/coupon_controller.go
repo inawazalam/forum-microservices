@@ -25,7 +25,7 @@ func (s *Server) AddNewCoupon(w http.ResponseWriter, r *http.Request) {
 	}
 	coupon.Prepare()
 	fmt.Println(coupon)
-	savedCoupon, er := models.SaveCoupon(coupon)
+	savedCoupon, er := models.SaveCoupon(s.Client, coupon)
 	if er != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
 	}
@@ -37,15 +37,15 @@ func (s *Server) AddNewCoupon(w http.ResponseWriter, r *http.Request) {
 
 //ValidateCoupon no sql injection
 func (s *Server) ValidateCoupon(w http.ResponseWriter, r *http.Request) {
-	var param1 string
-	param1 = r.URL.Query().Get("coupon_code")
-	if param1 == "" {
+	var param string
+	param = r.URL.Query().Get("coupon_code")
+	if param == "" {
 		//responses.ERROR(w, http.StatusBadRequest)
 		responses.JSON(w, http.StatusBadRequest, "Invalid Param")
 	}
-	coupon, err := models.ValidateCouponCode(param1)
+	coupon, err := models.ValidateCouponCode(s.Client, param)
 	if err != nil {
-		responses.ERROR(w, http.StatusExpectationFailed, err)
+		responses.JSON(w, http.StatusExpectationFailed, "Sorry we didn't find any data")
 	}
 	responses.JSON(w, http.StatusOK, coupon)
 }

@@ -2,10 +2,12 @@ package middlewares
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/inawazalam/forum-microservices/api/auth"
 	"github.com/inawazalam/forum-microservices/api/responses"
+	"github.com/jinzhu/gorm"
 )
 
 //
@@ -27,7 +29,7 @@ func AccessControlMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS,PUT")
-		w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "authorization,content-type")
 
 		if r.Method == "OPTIONS" {
 			return
@@ -38,13 +40,14 @@ func AccessControlMiddleware(next http.Handler) http.Handler {
 }
 
 //g
-func SetMiddlewareAuthentication(next http.HandlerFunc) http.HandlerFunc {
+func SetMiddlewareAuthentication(next http.HandlerFunc, db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := auth.TokenValid(r)
+		userID, err := auth.ExtractTokenID(r, db)
 		if err != nil {
 			responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 			return
 		}
+		fmt.Println(userID)
 		next(w, r)
 	}
 }

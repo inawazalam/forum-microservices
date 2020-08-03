@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/inawazalam/forum-microservices/api/models"
+	"github.com/jinzhu/gorm"
 )
 
 //
@@ -58,7 +60,7 @@ func ExtractToken(r *http.Request) string {
 }
 
 //
-func ExtractTokenID(r *http.Request) (uint32, error) {
+func ExtractTokenID(r *http.Request, db *gorm.DB) (uint32, error) {
 
 	tokenString := ExtractToken(r)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -74,7 +76,7 @@ func ExtractTokenID(r *http.Request) (uint32, error) {
 	if ok && token.Valid {
 		name := claims["sub"]
 		if name != nil {
-			err := CheckTokenInDB(name)
+			err := CheckTokenInDB(name, db)
 			return 0, err
 		}
 		fmt.Println(name)
@@ -85,9 +87,14 @@ func ExtractTokenID(r *http.Request) (uint32, error) {
 }
 
 //
-func CheckTokenInDB(username interface{}) error {
+func CheckTokenInDB(username interface{}, db *gorm.DB) error {
 	var err error
-	//userGotten, err := FindUserByEmail(username)
+	email := fmt.Sprintf("%v", username)
+	num, err := models.FindUserByEmail(email, db)
+
+	if num != nil {
+		return nil
+	}
 	if err != nil {
 		return err
 	}

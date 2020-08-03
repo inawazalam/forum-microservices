@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/inawazalam/forum-microservices/api/mongodb"
 	"github.com/lithammer/shortuuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -28,14 +27,13 @@ type Post struct {
 	CreatedAt time.Time
 }
 
-var client *mongo.Client = nil
-
 //
 func (p *Post) Prepare() {
 	p.ID = shortuuid.New()
 	p.Title = html.EscapeString(strings.TrimSpace(p.Title))
 	p.Content = html.EscapeString(strings.TrimSpace(p.Content))
 	p.Author = User{}
+	p.AuthorID = autherID
 	p.Comments = []Comments{}
 	p.CreatedAt = time.Now()
 }
@@ -56,32 +54,42 @@ func (p *Post) Validate() error {
 }
 
 //
-func SavePost(post Post) (Post, error) {
+func Prepare() User {
+	var u User
+	u.Nickname = nickname
+	u.Email = userEmail
+	u.VehicleID = vehicleID
+	u.CreatedAt = time.Now()
+	u.Picurl = picurl
+	return u
+}
+
+//
+func SavePost(client *mongo.Client, post Post) (Post, error) {
 	var err error
-	if client == nil {
-		client = mongodb.InitializeMongo()
-	}
-	//conn := mongodb.GetMongoConnection("localhost", "traceable")
-	// Get a handle for your collection
+
+	post.ID = shortuuid.New()
+	post.AuthorID = autherID
+	post.CreatedAt = time.Now()
+	post.Author = Prepare()
+
 	collection := client.Database("traceable").Collection("post")
 	insertResult, err := collection.InsertOne(context.TODO(), post)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 	fmt.Println("Inserted a single document: ", insertResult.InsertedID)
 	return post, err
 }
 
 //
-func GetPostByID(ID uint64) (Post, error) {
+func GetPostByID(client *mongo.Client, ID string) (Post, error) {
 	//var err error
 	var post Post
-	if client == nil {
-		client = mongodb.InitializeMongo()
-	}
+
 	//filter := bson.D{{"name", "Ash"}}
 	collection := client.Database("traceable").Collection("post")
-	filter := bson.D{{"authorid", ID}}
+	filter := bson.D{{"id", ID}}
 	err := collection.FindOne(context.TODO(), filter).Decode(&post)
 
 	return post, err
@@ -89,12 +97,9 @@ func GetPostByID(ID uint64) (Post, error) {
 }
 
 //
-func FindAllPost() ([]interface{}, error) {
+func FindAllPost(client *mongo.Client) ([]interface{}, error) {
 	var err error
 	post := []Post{}
-	if client == nil {
-		client = mongodb.InitializeMongo()
-	}
 
 	options := options.Find()
 	options.SetSort(bson.D{{"_id", -1}})
@@ -102,7 +107,7 @@ func FindAllPost() ([]interface{}, error) {
 	collection := client.Database("traceable").Collection("post")
 	cur, err := collection.Find(context.Background(), bson.D{}, options)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 	fmt.Println(cur)
 	objectType := reflect.TypeOf(post).Elem()
@@ -124,20 +129,4 @@ func FindAllPost() ([]interface{}, error) {
 	}
 
 	return list, err
-}
-
-//
-func CommentOnPost(post Post) (Comments, error) {
-	var err error
-	var comments Comments
-	if client == nil {
-		client = mongodb.InitializeMongo()
-	}
-	//conn := mongodb.GetMongoConnection("localhost", "traceable")
-	// Get a handle for your collection
-	//postByID, err := GetPostByID(post.AuthorID)
-	//postByID.Comments = bson.M
-	//collection := client.Database("traceable").Collection("post")
-
-	return comments, err
 }

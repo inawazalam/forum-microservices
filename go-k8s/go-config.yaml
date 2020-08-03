@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-configmap
+  labels:
+    app: go
+data:
+  .env: |
+    # Postgres Live
+    DB_HOST=postgres-service
+    DB_DRIVER=postgres
+    API_SECRET=traceable #Used for creating a JWT. Can be anything 
+    DB_USER=postgres
+    DB_PASSWORD=root
+    DB_NAME=boilerplate
+    DB_PORT=5432 
+
+    # Mongo Database
+
+    MONGO_DB_HOST=mongodb-np
+    MONGO_DB_DRIVER=mongodb
+    MONGO_DB_PORT=27017
+    MONGO_DB_USER=us%r
+    MONGO_DB_PASSWORD=p451w0rd
+    MONGO_DB_NAME=traceable

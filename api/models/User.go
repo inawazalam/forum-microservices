@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"html"
 	"strings"
 	"time"
 
@@ -12,21 +11,40 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+//
+type UserDetail struct {
+	autherID  uint64
+	nickname  string
+	email     string
+	picurl    string
+	vehicleID string
+}
+
+var autherID uint64
+var nickname string
+var userEmail string
+var picurl string
+var vehicleID string
+
 //User model
 type User struct {
 	Nickname  string `gorm:"size:255;not null;unique" json:"nickname"`
 	Email     string `gorm:"size:100;not null;unique" json:"email"`
 	VehicleID string `gorm:"size:100;not null;unique" json:"vehicleid"`
+	Picurl    string `gorm:"size:100;not null;unique" json:"profile_pic_url"`
 	//Password  string    `gorm:"size:100;not null;" json:"password"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 }
 
 //
-func (u *User) Prepare() {
-	u.Nickname = html.EscapeString(strings.TrimSpace(u.Nickname))
-	u.Email = html.EscapeString(strings.TrimSpace(u.Email))
+/*func Prepare() {
+	var u User
+	u.Nickname = nickname
+	u.Email = email
+	u.VehicleID = vehicleID
 	u.CreatedAt = time.Now()
-}
+	u.Picurl = picurl
+}*/
 
 //Hash for password
 func Hash(password string) ([]byte, error) {
@@ -90,14 +108,27 @@ func (u *User) Validate(action string) error {
 }
 
 //
-func (u *User) FindUserByEmail(db *gorm.DB, email string) (*User, error) {
+func FindUserByEmail(email string, db *gorm.DB) (*uint64, error) {
 	var err error
-	err = db.Debug().Model(User{}).Where("email like ?", email).Take(&u).Error
-	if err != nil {
-		return &User{}, err
-	}
-	if gorm.IsRecordNotFoundError(err) {
-		return &User{}, errors.New("User not found")
-	}
-	return u, err
+	var id uint64
+	var number *uint64
+	var name string
+	var profile_pic_url string
+	var uuid string
+	userEmail = email
+	//var
+
+	row := db.Table("user_login").Where("email LIKE ?", email).Select("id,number").Row()
+
+	row.Scan(&id, &number)
+	autherID = id
+	row1 := db.Table("user_details").Where("user_id = ?", id).Select("name, profile_pic_url").Row()
+	row1.Scan(&name, &profile_pic_url)
+	nickname = name
+	picurl = profile_pic_url
+
+	row2 := db.Table("vehicle_details").Where("owner_id = ?", id).Select("uuid").Row()
+	row2.Scan(&uuid)
+	vehicleID = uuid
+	return number, err
 }
